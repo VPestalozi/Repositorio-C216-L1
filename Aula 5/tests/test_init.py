@@ -1,21 +1,39 @@
-from fastapi.testclient import TestClient
-from main import app, alunos, contadores
+import pytest
+import os
+from httpx import AsyncClient, ASGITransport
+from app.main import app
+from app.db.connection import db
 
-client = TestClient(app)
+# Configuração da URL base (podemos usar app ASGI diretamente pelo httpx.AsyncClient)
+# ou se estivermos rodando no docker com o compose "tests", podemos chamar o backend real se preferir,
+# mas testar via ASGI é mais rápido se o banco for o mesmo. Aqui usaremos o ASGI transport.
+# Porém, a conexão do banco é via lifespan, o httpx AsyncClient suporta isso.
 
-def setup_function():
-    """Reseta os dados antes de cada teste."""
-    alunos.clear()
-    for key in contadores:
-        contadores[key] = 0
+@pytest.fixture(scope="function", autouse=True)
+async def init_db():
+    await db.connect()
+    yield
+    await db.disconnect()
 
-def test_criar_alunos_3_por_curso():
+@pytest.fixture(scope="function")
+async def client(init_db):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
+
+@pytest.fixture(autouse=True)
+async def setup_db(client: AsyncClient):
+    """Reseta os dados antes de cada teste chamando o endpoint de teste."""
+    # A rota /api/v1/alunos/test/reset-all foi criada para limpar tabelas
+    await client.delete("/api/v1/alunos/test/reset-all")
+
+@pytest.mark.asyncio
+async def test_criar_alunos_3_por_curso(client: AsyncClient):
     """Testa a criação de pelo menos 3 alunos por curso."""
     cursos = ["GES", "GEC", "GET", "GEP", "ADS", "SI"]
     
     for curso in cursos:
         for i in range(1, 4):
-            response = client.post(
+            response = await client.post(
                 "/api/v1/alunos",
                 json={
                     "nome": f"Aluno {curso} {i}", 
@@ -31,23 +49,25 @@ def test_criar_alunos_3_por_curso():
             assert data["matricula"] == i
             assert data["id"] == f"{curso}{i}"
 
-def test_criar_aluno_campos_invalidos():
+@pytest.mark.asyncio
+async def test_criar_aluno_campos_invalidos(client: AsyncClient):
     """Testa validações na criação de aluno (campos vazios ou inválidos)."""
-    response = client.post("/api/v1/alunos", json={"nome": "", "email": "a@a.com", "curso": "GES"})
+    response = await client.post("/api/v1/alunos", json={"nome": "", "email": "a@a.com", "curso": "GES"})
     assert response.status_code == 400
     
-    response = client.post("/api/v1/alunos", json={"nome": "João", "email": "", "curso": "GES"})
+    response = await client.post("/api/v1/alunos", json={"nome": "João", "email": "", "curso": "GES"})
     assert response.status_code == 400
     
-    response = client.post("/api/v1/alunos", json={"nome": "João", "email": "a@a.com", "curso": "XYZ"})
+    response = await client.post("/api/v1/alunos", json={"nome": "João", "email": "a@a.com", "curso": "XYZ"})
     assert response.status_code == 400
 
-def test_listar_alunos():
+@pytest.mark.asyncio
+async def test_listar_alunos(client: AsyncClient):
     """Testa a listagem geral de alunos."""
-    client.post("/api/v1/alunos", json={"nome": "João", "email": "j@a.com", "curso": "GES"})
-    client.post("/api/v1/alunos", json={"nome": "Maria", "email": "m@a.com", "curso": "GEC"})
+    await client.post("/api/v1/alunos", json={"nome": "João", "email": "j@a.com", "curso": "GES"})
+    await client.post("/api/v1/alunos", json={"nome": "Maria", "email": "m@a.com", "curso": "GEC"})
     
-    response = client.get("/api/v1/alunos")
+    response = await client.get("/api/v1/alunos")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
@@ -55,25 +75,28 @@ def test_listar_alunos():
     assert "GES1" in ids
     assert "GEC1" in ids
 
-def test_buscar_por_id_sucesso():
+@pytest.mark.asyncio
+async def test_buscar_por_id_sucesso(client: AsyncClient):
     """Testa a busca de aluno específico por ID."""
-    client.post("/api/v1/alunos", json={"nome": "João", "email": "j@a.com", "curso": "GES"})
+    await client.post("/api/v1/alunos", json={"nome": "João", "email": "j@a.com", "curso": "GES"})
     
-    response = client.get("/api/v1/alunos/GES1")
+    response = await client.get("/api/v1/alunos/GES1")
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == "GES1"
     assert data["nome"] == "João"
 
-def test_buscar_por_id_nao_encontrado():
-    response = client.get("/api/v1/alunos/GES999")
+@pytest.mark.asyncio
+async def test_buscar_por_id_nao_encontrado(client: AsyncClient):
+    response = await client.get("/api/v1/alunos/GES999")
     assert response.status_code == 404
 
-def test_atualizar_dados_patch():
+@pytest.mark.asyncio
+async def test_atualizar_dados_patch(client: AsyncClient):
     """Testa a atualização de dados do aluno via PATCH."""
-    client.post("/api/v1/alunos", json={"nome": "João", "email": "j@a.com", "curso": "GES"})
+    await client.post("/api/v1/alunos", json={"nome": "João", "email": "j@a.com", "curso": "GES"})
     
-    response = client.patch(
+    response = await client.patch(
         "/api/v1/alunos/GES1",
         json={"nome": "João Atualizado", "email": "novo@a.com"}
     )
@@ -83,7 +106,7 @@ def test_atualizar_dados_patch():
     assert data["email"] == "novo@a.com"
     assert data["id"] == "GES1"
     
-    response_curso = client.patch(
+    response_curso = await client.patch(
         "/api/v1/alunos/GES1",
         json={"curso": "GEC"}
     )
@@ -92,30 +115,38 @@ def test_atualizar_dados_patch():
     assert data_curso["curso"] == "GEC"
     assert data_curso["id"] == "GEC1"
     
-    assert client.get("/api/v1/alunos/GES1").status_code == 404
-    assert client.get("/api/v1/alunos/GEC1").status_code == 200
-
-def test_remover_aluno():
-    """Testa a remoção de um aluno específico."""
-    client.post("/api/v1/alunos", json={"nome": "João", "email": "j@a.com", "curso": "GES"})
+    res_ges = await client.get("/api/v1/alunos/GES1")
+    assert res_ges.status_code == 404
     
-    response = client.delete("/api/v1/alunos/GES1")
+    res_gec = await client.get("/api/v1/alunos/GEC1")
+    assert res_gec.status_code == 200
+
+@pytest.mark.asyncio
+async def test_remover_aluno(client: AsyncClient):
+    """Testa a remoção de um aluno específico."""
+    await client.post("/api/v1/alunos", json={"nome": "João", "email": "j@a.com", "curso": "GES"})
+    
+    response = await client.delete("/api/v1/alunos/GES1")
     assert response.status_code == 200
     assert "removido com sucesso" in response.json()["message"]
     
-    assert client.get("/api/v1/alunos/GES1").status_code == 404
+    res = await client.get("/api/v1/alunos/GES1")
+    assert res.status_code == 404
 
-def test_resetar_alunos():
+@pytest.mark.asyncio
+async def test_resetar_alunos(client: AsyncClient):
     """Testa o reset de todos os alunos cadastrados."""
-    client.post("/api/v1/alunos", json={"nome": "João", "email": "j@a.com", "curso": "GES"})
-    client.post("/api/v1/alunos", json={"nome": "Maria", "email": "m@a.com", "curso": "GEC"})
+    await client.post("/api/v1/alunos", json={"nome": "João", "email": "j@a.com", "curso": "GES"})
+    await client.post("/api/v1/alunos", json={"nome": "Maria", "email": "m@a.com", "curso": "GEC"})
     
-    response = client.delete("/api/v1/alunos")
+    response = await client.delete("/api/v1/alunos")
     assert response.status_code == 200
     
-    assert len(client.get("/api/v1/alunos").json()) == 0
+    res = await client.get("/api/v1/alunos")
+    assert len(res.json()) == 0
 
-def test_rota_raiz():
-    response = client.get("/")
+@pytest.mark.asyncio
+async def test_rota_raiz(client: AsyncClient):
+    response = await client.get("/")
     assert response.status_code == 200
     assert "Sistema de Gestão de Alunos" in response.json()["message"]
