@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Início - Sistema Acadêmico{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h2>Bem-vindo ao <span class="highlight">Sistema de Alunos</span></h2>
+    <p>Selecione uma das ações abaixo para gerenciar os registros acadêmicos do sistema</p>
+</div>
+
+<div class="button-grid">
+    <div class="btn-card" onclick="alert('Funcionalidade Adicionar Aluno será implementada em breve!')">
+        <div>
+            <div class="btn-title">Adicionar Aluno</div>
+            <div class="btn-desc">Cadastre um novo aluno</div>
+        </div>
+    </div>
+
+    <div class="btn-card" onclick="alert('Funcionalidade Buscar Aluno será implementada em breve!')">
+        <div>
+            <div class="btn-title">Buscar Aluno</div>
+            <div class="btn-desc">Procure pelas informações detalhadas de um aluno usando o número da matrícula.</div>
+        </div>
+    </div>
+
+    <div class="btn-card" onclick="alert('Funcionalidade Listar Alunos será implementada em breve!')">
+        <div>
+            <div class="btn-title">Listar Alunos</div>
+            <div class="btn-desc">Visualize a listagem completa de todos os alunos atualmente cadastrados.</div>
+        </div>
+    </div>
+
+    <div class="btn-card" onclick="alert('Funcionalidade Remover Aluno será implementada em breve!')">
+        <div>
+            <div class="btn-title">Remover Aluno</div>
+            <div class="btn-desc">Exclua permanentemente o registro de um aluno através de sua matrícula.</div>
+        </div>
+    </div>
+
+    <div class="btn-card" onclick="alert('Funcionalidade Atualizar Matrícula será implementada em breve!')">
+        <div>
+            <div class="btn-title">Atualizar Matrícula</div>
+            <div class="btn-desc">Modifique ou atualize as informações cadastrais e de matrícula de um aluno.</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

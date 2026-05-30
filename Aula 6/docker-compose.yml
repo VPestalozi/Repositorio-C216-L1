@@ -1,0 +1,44 @@
+version: '3.8'
+
+volumes:
+  postgres_data:
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: alunos_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/app/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    build: ./backend
+    restart: on-failure
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/alunos_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    restart: on-failure
+    ports:
+      - "5000:5000"
+    depends_on:
+      - backend
+
+  tests:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/alunos_db
+    command: pytest tests/ -v
+    depends_on:
+      - db
+      - backend
