@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Gerenciamento — Sistema de Biblioteca{% endblock %}
+
+{% block navbar %}
+<nav class="navbar">
+    <div class="nav-brand">📚 Biblioteca</div>
+    <div class="nav-links">
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/manage" class="nav-link active">Gerenciar</a>
+        <span id="nav-user" class="nav-user"></span>
+        <button class="btn btn-sm btn-outline" onclick="logout()">Sair</button>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h2>Gerenciamento</h2>
+<div id="manage-message" class="message hidden"></div>
+
+<!-- ========== SEÇÃO: CATEGORIAS ========== -->
+<section class="manage-section">
+    <h3>📁 Categorias</h3>
+    <p class="section-hint">⚠️ Cadastre categorias antes de cadastrar livros.</p>
+
+    <form id="category-form" onsubmit="handleCreateCategory(event)" class="inline-form">
+        <input type="text" id="cat-name" placeholder="Nome da categoria" required>
+        <input type="text" id="cat-description" placeholder="Descrição (opcional)">
+        <button type="submit" class="btn btn-primary">Adicionar</button>
+    </form>
+
+    <div class="tags-container" id="categories-list">
+        <span class="tag">Carregando...</span>
+    </div>
+</section>
+
+<!-- ========== SEÇÃO: AUTORES ========== -->
+<section class="manage-section">
+    <h3>✍️ Autores</h3>
+
+    <form id="author-form" onsubmit="handleCreateAuthor(event)" class="inline-form">
+        <input type="text" id="author-name" placeholder="Nome do autor" required>
+        <input type="text" id="author-bio" placeholder="Biografia (opcional)">
+        <button type="submit" class="btn btn-primary">Adicionar</button>
+    </form>
+
+    <table id="authors-table" class="table-sm">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="authors-tbody">
+            <tr><td colspan="3" class="text-center">Carregando...</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ========== SEÇÃO: LIVROS ========== -->
+<section class="manage-section">
+    <h3>📖 Livros</h3>
+
+    <form id="book-form" onsubmit="handleBookSubmit(event)">
+        <input type="hidden" id="book-edit-id" value="">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="book-title">Título *</label>
+                <input type="text" id="book-title" placeholder="Título do livro" required>
+            </div>
+            <div class="form-group">
+                <label for="book-isbn">ISBN</label>
+                <input type="text" id="book-isbn" placeholder="ISBN (opcional)">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="book-year">Ano de Publicação</label>
+                <input type="number" id="book-year" placeholder="Ex: 2024">
+            </div>
+            <div class="form-group">
+                <label for="book-author">Autor</label>
+                <select id="book-author">
+                    <option value="">Sem autor definido</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="book-description">Descrição</label>
+            <textarea id="book-description" placeholder="Descrição do livro (opcional)" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="book-categories">Categorias *</label>
+            <select id="book-categories" multiple required>
+            </select>
+            <small>Segure Ctrl para selecionar múltiplas categorias</small>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="book-submit-btn">Cadastrar Livro</button>
+            <button type="button" class="btn btn-outline hidden" id="book-cancel-btn" onclick="cancelEdit()">Cancelar Edição</button>
+        </div>
+    </form>
+
+    <!-- Lista de livros para editar/excluir -->
+    <h4>Livros Cadastrados</h4>
+    <table id="manage-books-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Autor</th>
+                <th>Categorias</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="manage-books-tbody">
+            <tr><td colspan="5" class="text-center">Carregando...</td></tr>
+        </tbody>
+    </table>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/manage.js') }}"></script>
+{% endblock %}

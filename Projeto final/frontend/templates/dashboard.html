@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Sistema de Biblioteca{% endblock %}
+
+{% block navbar %}
+<nav class="navbar">
+    <div class="nav-brand">📚 Biblioteca</div>
+    <div class="nav-links">
+        <a href="/dashboard" class="nav-link active">Dashboard</a>
+        <a href="/manage" class="nav-link">Gerenciar</a>
+        <span id="nav-user" class="nav-user"></span>
+        <button class="btn btn-sm btn-outline" onclick="logout()">Sair</button>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h2>Dashboard — Livros Cadastrados</h2>
+
+<!-- Barra de pesquisa -->
+<div class="search-bar">
+    <input type="text" id="search-title" placeholder="Pesquisar por título...">
+    <input type="text" id="search-author" placeholder="Pesquisar por autor...">
+    <select id="search-category">
+        <option value="">Todas as categorias</option>
+    </select>
+    <button class="btn btn-primary" onclick="searchBooks()">Pesquisar</button>
+    <button class="btn btn-outline" onclick="loadBooks()">Limpar</button>
+</div>
+
+<!-- Mensagem -->
+<div id="dashboard-message" class="message hidden"></div>
+
+<!-- Tabela de livros -->
+<div class="table-container">
+    <table id="books-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Autor</th>
+                <th>ISBN</th>
+                <th>Ano</th>
+                <th>Categorias</th>
+            </tr>
+        </thead>
+        <tbody id="books-tbody">
+            <tr><td colspan="6" class="text-center">Carregando livros...</td></tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Autor — Sistema de Biblioteca{% endblock %}
+
+{% block navbar %}
+<nav class="navbar">
+    <div class="nav-brand">📚 Biblioteca</div>
+    <div class="nav-links">
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/manage" class="nav-link">Gerenciar</a>
+        <span id="nav-user" class="nav-user"></span>
+        <button class="btn btn-sm btn-outline" onclick="logout()">Sair</button>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<a href="/dashboard" class="back-link">← Voltar ao Dashboard</a>
+
+<div id="author-message" class="message hidden"></div>
+
+<div id="author-info">
+    <h2 id="author-name">Carregando...</h2>
+    <p id="author-bio" class="text-muted"></p>
+    <small id="author-date" class="text-muted"></small>
+</div>
+
+<h3>Livros deste Autor</h3>
+<table id="author-books-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>ISBN</th>
+            <th>Ano</th>
+            <th>Categorias</th>
+        </tr>
+    </thead>
+    <tbody id="author-books-tbody">
+        <tr><td colspan="5" class="text-center">Carregando...</td></tr>
+    </tbody>
+</table>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ID do autor passado pelo Flask template
+    const AUTHOR_ID = {{ author_id }};
+</script>
+<script src="{{ url_for('static', filename='js/author.js') }}"></script>
+{% endblock %}
